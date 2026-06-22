@@ -1,0 +1,178 @@
+.control-bridge {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  padding: 1.5rem;
+  background: var(--bg-color);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+}
+
+.control-bridge::before {
+  display: none;
+}
+
+.control-bridge__glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+  animation: bridgeGlow 12s ease-in-out infinite alternate;
+}
+
+@keyframes bridgeGlow {
+  from {
+    opacity: 0.5;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+
+.control-bridge__svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  position: relative;
+}
+
+.control-bridge__path {
+  stroke: url(#threadGrad);
+  stroke-width: 2;
+  stroke-dasharray: 200;
+  stroke-dashoffset: 200;
+  animation: threadFlow 2s ease forwards 0.2s;
+}
+
+.control-bridge__path--b {
+  animation-delay: 0.7s;
+}
+
+@keyframes threadFlow {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.control-bridge__circle {
+  fill: rgba(99, 102, 241, 0.15);
+  stroke: var(--color-relay-soft);
+  stroke-width: 1.5;
+  opacity: 0;
+  animation: nodeIn 0.6s ease forwards;
+  animation-delay: var(--node-delay, 0s);
+}
+
+.control-bridge__circle--hub {
+  fill: rgba(139, 92, 246, 0.15);
+  stroke: var(--color-copper-glow);
+  stroke-width: 2;
+}
+
+.control-bridge__node {
+  animation: none;
+}
+
+.control-bridge__label {
+  fill: #a1a1aa;
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 500;
+  text-anchor: middle;
+  opacity: 0;
+  animation: nodeIn 0.5s ease forwards;
+  animation-delay: calc(var(--node-delay, 0s) + 0.15s);
+}
+
+@keyframes nodeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.control-bridge__pulse {
+  fill: var(--color-copper);
+  opacity: 0;
+  animation:
+    nodeIn 0.4s ease forwards 1s,
+    hubPulse 2.5s ease-in-out infinite 1.5s;
+}
+
+@keyframes hubPulse {
+  0%,
+  100% {
+    r: 5;
+    opacity: 0.9;
+  }
+  50% {
+    r: 8;
+    opacity: 0.35;
+  }
+}
+
+.control-bridge__status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: var(--bg-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.control-bridge__status::before {
+  display: none;
+}
+
+.control-bridge__status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-sage);
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+  animation: statusBlink 2s ease-in-out infinite;
+}
+
+@keyframes statusBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .control-bridge__glow,
+  .control-bridge__path,
+  .control-bridge__circle,
+  .control-bridge__label,
+  .control-bridge__pulse,
+  .control-bridge__status-dot {
+    animation: none;
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .control-bridge {
+    padding: 1.25rem;
+  }
+}

@@ -1,0 +1,50 @@
+.digit-mark {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.digit-mark svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.digit-mark--sm svg {
+  width: 28px;
+  height: 28px;
+}
+
+.digit-mark--md svg {
+  width: 36px;
+  height: 36px;
+}
+
+.digit-mark--lg svg {
+  width: 48px;
+  height: 48px;
+}
+
+.digit-mark__bg {
+  fill: #141416;
+}
+
+.digit-mark__ring {
+  fill: none;
+  stroke: rgba(139, 92, 246, 0.35);
+  stroke-width: 1.5;
+}
+
+.digit-mark__lines {
+  stroke: rgba(167, 139, 250, 0.55);
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.digit-mark__hub {
+  fill: var(--color-copper);
+}
+
+.digit-mark__node {
+  fill: var(--color-relay-soft);
+}
