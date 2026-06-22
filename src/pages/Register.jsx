@@ -12,6 +12,8 @@ import {
   validatePasswordMatch,
 } from '../utils/authErrors'
 import { getPostLoginRedirect } from '../utils/roles'
+import { validateDeveloperCv } from '../utils/developerProfile'
+import DeveloperCvFields from '../components/DeveloperCvFields'
 import usePageMeta from '../hooks/usePageMeta'
 import { pageTitle } from '../constants/brand'
 import './Auth.css'
@@ -27,7 +29,8 @@ function Register() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [accountType, setAccountType] = useState('customer')
   const [bio, setBio] = useState('')
-  const [skills, setSkills] = useState('')
+  const [experienceCategories, setExperienceCategories] = useState([])
+  const [experienceYears, setExperienceYears] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
   const [formError, setFormError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
@@ -45,6 +48,14 @@ function Register() {
     if (passwordError) errors.password = passwordError
     if (confirmError) errors.confirmPassword = confirmError
 
+    if (accountType === 'developer') {
+      Object.assign(errors, validateDeveloperCv({
+        bio,
+        experienceCategories,
+        experienceYears,
+      }))
+    }
+
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -58,10 +69,8 @@ function Register() {
     try {
       const result = await signup(email.trim(), password, name.trim(), accountType, {
         bio,
-        skills: skills
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean),
+        experienceCategories,
+        experienceYears,
       })
 
       if (result.pendingDeveloper) {
@@ -97,7 +106,7 @@ function Register() {
   }
 
   return (
-    <div className="page auth-page">
+    <div className={`page auth-page ${accountType === 'developer' ? 'auth-page--register-developer' : ''}`}>
       <div className="container">
         <div className="auth-card">
           <h1 className="auth-card__title">რეგისტრაცია</h1>
@@ -214,36 +223,17 @@ function Register() {
             </fieldset>
 
             {accountType === 'developer' && (
-              <>
-                <div className="auth-form__field">
-                  <label htmlFor="register-bio" className="auth-form__label">
-                    პროფილი (არასავალდებულო)
-                  </label>
-                  <textarea
-                    id="register-bio"
-                    className="auth-form__input auth-form__textarea"
-                    rows={3}
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    placeholder="გამოცდილება, სპეციალიზაცია..."
-                    disabled={submitting || !isFirebaseConfigured || !!successMessage}
-                  />
-                </div>
-                <div className="auth-form__field">
-                  <label htmlFor="register-skills" className="auth-form__label">
-                    უნარები (მძიმით გამოყოფილი)
-                  </label>
-                  <input
-                    id="register-skills"
-                    type="text"
-                    className="auth-form__input"
-                    value={skills}
-                    onChange={(e) => setSkills(e.target.value)}
-                    placeholder="React, Windows, ქსელი..."
-                    disabled={submitting || !isFirebaseConfigured || !!successMessage}
-                  />
-                </div>
-              </>
+              <DeveloperCvFields
+                idPrefix="register"
+                bio={bio}
+                onBioChange={setBio}
+                experienceCategories={experienceCategories}
+                onExperienceCategoriesChange={setExperienceCategories}
+                experienceYears={experienceYears}
+                onExperienceYearsChange={setExperienceYears}
+                fieldErrors={fieldErrors}
+                disabled={submitting || !isFirebaseConfigured || !!successMessage}
+              />
             )}
 
             <button

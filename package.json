@@ -9,6 +9,7 @@
     "dev:all": "node scripts/free-emulator-ports.mjs && firebase emulators:exec --only auth,firestore \"npm run dev:emulator\"",
     "free-ports": "node scripts/free-emulator-ports.mjs",
     "seed-admin": "node scripts/seed-admin.mjs",
+    "seed-developer": "node scripts/seed-developer.mjs",
     "clear-data": "node scripts/clear-emulator-data.mjs",
     "reset-emulator": "node scripts/reset-emulator.mjs",
     "emulators": "firebase emulators:start --only auth,firestore",

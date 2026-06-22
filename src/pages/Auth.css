@@ -42,6 +42,11 @@
   flex: 0 0 auto;
 }
 
+.auth-page--register-developer .container {
+  width: min(100%, 560px);
+  max-width: 560px;
+}
+
 .auth-page .auth-loading {
   min-height: 280px;
   width: 100%;

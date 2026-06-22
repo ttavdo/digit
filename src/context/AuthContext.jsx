@@ -89,7 +89,8 @@ export function AuthProvider({ children }) {
     if (profile.pendingDeveloper) {
       userData.developerRequestedAt = serverTimestamp()
       userData.bio = extra.bio?.trim() || ''
-      userData.skills = extra.skills || []
+      userData.experienceCategories = extra.experienceCategories || []
+      userData.experienceYears = extra.experienceYears || ''
       userData.ratingAvg = 0
       userData.ratingCount = 0
       userData.ratingSum = 0

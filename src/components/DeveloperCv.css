@@ -1,0 +1,125 @@
+.dev-cv-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.dev-cv-fields__intro {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.dev-cv-fields__hint {
+  margin: 0 0 0.625rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.dev-cv-fields__categories {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.dev-cv-fields__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.dev-cv-fields__category {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #0c0c0e;
+  cursor: pointer;
+  transition:
+    border-color var(--transition),
+    background-color var(--transition);
+}
+
+.dev-cv-fields__category:hover {
+  border-color: var(--color-border-hover);
+}
+
+.dev-cv-fields__category--checked {
+  border-color: rgba(139, 92, 246, 0.45);
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.dev-cv-fields__category input {
+  margin-top: 0.125rem;
+  accent-color: var(--color-copper);
+}
+
+.dev-cv-fields__category-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.dev-cv-fields__category-icon {
+  flex-shrink: 0;
+  color: var(--color-copper-glow);
+  margin-top: 0.125rem;
+}
+
+.dev-cv-fields__category-title {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--primary-color);
+}
+
+.dev-cv-summary {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.dev-cv-summary__bio {
+  margin: 0 0 0.625rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.dev-cv-summary__meta {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.dev-cv-summary__meta div {
+  display: grid;
+  gap: 0.125rem;
+}
+
+.dev-cv-summary__meta dt {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #71717a;
+}
+
+.dev-cv-summary__meta dd {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--primary-color);
+  line-height: 1.45;
+}
+
+@media (max-width: 480px) {
+  .dev-cv-fields__grid {
+    grid-template-columns: 1fr;
+  }
+}

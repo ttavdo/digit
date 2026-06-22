@@ -1,108 +1,64 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Archive, ClipboardList, Home, ListChecks, LogOut, RefreshCw, Save, User } from 'lucide-react'
+import {
+  ArrowLeft,
+  CheckCircle2,
+  ClipboardList,
+  History,
+  Loader2,
+  LogOut,
+  Pencil,
+  Play,
+  Save,
+  User,
+} from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import {
+  formatExperienceCategories,
+  formatExperienceYears,
+  validateDeveloperCv,
+} from '../utils/developerProfile'
 import {
   formatDeveloperRating,
   formatOrderAmount,
   formatOrderDate,
-  formatOrderNoteTime,
-  getDeveloperOrderStats,
-  getDeveloperPayoutStats,
   ORDER_PRIORITY_LABELS,
   ORDER_STATUS,
   ORDER_STATUS_LABELS,
-  PAYOUT_STATUS_LABELS,
   partitionDeveloperOrders,
-  resolvePayoutStatus,
   subscribeToDeveloperOrders,
   subscribeToOrder,
   updateDeveloperOrderStatus,
 } from '../services/orderService'
 import { updateDeveloperProfile } from '../services/userService'
+import DeveloperCvFields from '../components/DeveloperCvFields'
+import DigitMark from '../components/DigitMark'
 import usePageMeta from '../hooks/usePageMeta'
 import { pageTitle } from '../constants/brand'
 import './DeveloperDashboard.css'
-import './Dashboard.css'
 
-const DEVELOPER_STATUS_OPTIONS = [ORDER_STATUS.IN_PROGRESS, ORDER_STATUS.COMPLETED]
-
-function DeveloperPayoutBadge({ order }) {
-  if (order.developerPayout == null || order.developerPayout <= 0) return null
-  const status = resolvePayoutStatus(order)
+function TaskCard({ order, onClick }) {
   return (
-    <span className={`comp-badge comp-badge--payout-${status}`}>
-      {PAYOUT_STATUS_LABELS[status]}
-    </span>
-  )
-}
-
-function DeveloperProfilePanel({ user, userProfile, onError }) {
-  const [bio, setBio] = useState(userProfile?.bio || '')
-  const [skills, setSkills] = useState((userProfile?.skills || []).join(', '))
-  const [saving, setSaving] = useState(false)
-
-  const handleSave = async (e) => {
-    e.preventDefault()
-    setSaving(true)
-    try {
-      await updateDeveloperProfile(user.uid, {
-        bio: bio.trim(),
-        skills: skills
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean),
-      })
-    } catch (err) {
-      onError(err.message || 'პროფილის შენახვა ვერ მოხერხდა.')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <div className="dev-profile">
-      <div className="dev-profile__header">
-        <User size={40} className="dev-profile__avatar" />
-        <div>
-          <h2>{userProfile?.name || 'შემსრულებელი'}</h2>
-          <p className="dev-profile__rating">{formatDeveloperRating(userProfile)}</p>
-        </div>
+    <button type="button" className="dev-task-card" onClick={() => onClick(order.id)}>
+      <div className="dev-task-card__top">
+        <span className="dev-task-card__service">{order.serviceType}</span>
+        <span className={`dev-task-card__status dev-task-card__status--${order.status}`}>
+          {ORDER_STATUS_LABELS[order.status] ?? order.status}
+        </span>
       </div>
-      <form className="dev-profile__form" onSubmit={handleSave}>
-        <label className="dev-profile__field">
-          <span>ჩემს შესახებ</span>
-          <textarea
-            rows={4}
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            placeholder="გამოცდილება, სპეციალიზაცია..."
-            disabled={saving}
-          />
-        </label>
-        <label className="dev-profile__field">
-          <span>უნარები (მძიმით გამოყოფილი)</span>
-          <input
-            type="text"
-            value={skills}
-            onChange={(e) => setSkills(e.target.value)}
-            placeholder="React, Windows, ქსელი..."
-            disabled={saving}
-          />
-        </label>
-        <button type="submit" className="btn btn--primary btn--sm" disabled={saving}>
-          <Save size={16} />
-          პროფილის შენახვა
-        </button>
-      </form>
-    </div>
+      <p className="dev-task-card__description">{order.description}</p>
+      <div className="dev-task-card__meta">
+        <span>{ORDER_PRIORITY_LABELS[order.priority] ?? '—'}</span>
+        {order.developerPayout > 0 && (
+          <span className="dev-task-card__payout">{formatOrderAmount(order.developerPayout)}</span>
+        )}
+      </div>
+    </button>
   )
 }
 
-function DeveloperOrderDetail({ orderId, onError, onMissing }) {
+function TaskDetailScreen({ orderId, onBack, onError, readOnly = false }) {
   const [order, setOrder] = useState(null)
-  const [orderLoaded, setOrderLoaded] = useState(false)
-  const [statusValue, setStatusValue] = useState('')
+  const [loaded, setLoaded] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -112,25 +68,19 @@ function DeveloperOrderDetail({ orderId, onError, onMissing }) {
       orderId,
       (data) => {
         setOrder(data)
-        setOrderLoaded(true)
-        if (!data) {
-          onMissing?.()
-          return
-        }
-        setStatusValue(data.status ?? '')
+        setLoaded(true)
+        if (!data) onBack()
       },
-      (err) => onError(err.message || 'შეკვეთის ჩატვირთვა ვერ მოხერხდა.'),
+      (err) => onError(err.message || 'ტასკის ჩატვირთვა ვერ მოხერხდა.'),
     )
 
     return unsubscribe
-  }, [orderId, onError, onMissing])
+  }, [orderId, onBack, onError])
 
-  const handleStatusUpdate = async () => {
-    if (!orderId || !statusValue || statusValue === order?.status) return
-
+  const handleStart = async () => {
     setSubmitting(true)
     try {
-      await updateDeveloperOrderStatus(orderId, statusValue)
+      await updateDeveloperOrderStatus(orderId, ORDER_STATUS.IN_PROGRESS)
     } catch (err) {
       onError(err.message || 'სტატუსის განახლება ვერ მოხერხდა.')
     } finally {
@@ -138,118 +88,213 @@ function DeveloperOrderDetail({ orderId, onError, onMissing }) {
     }
   }
 
-  if (!orderLoaded) {
-    return <div className="dev-detail__empty">იტვირთება...</div>
+  const handleComplete = async () => {
+    setSubmitting(true)
+    try {
+      await updateDeveloperOrderStatus(orderId, ORDER_STATUS.COMPLETED)
+      onBack()
+    } catch (err) {
+      onError(err.message || 'სტატუსის განახლება ვერ მოხერხდა.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  if (!order) {
-    return <div className="dev-detail__empty">შეკვეთა აღარ არსებობს.</div>
+  if (!loaded) {
+    return (
+      <div className="dev-app__screen">
+        <div className="dev-app__loading">იტვირთება...</div>
+      </div>
+    )
   }
 
-  const notes = [...(order.managerNotes || [])].reverse()
+  if (!order) return null
+
+  const canStart = !readOnly && order.status === ORDER_STATUS.ASSIGNED
+  const canComplete = !readOnly && order.status === ORDER_STATUS.IN_PROGRESS
 
   return (
-    <div className="dev-detail">
-      <div className="dev-detail__header">
-        <div>
-          <h2 className="dev-detail__title">{order.customerName}</h2>
-          <p className="dev-detail__meta">{order.serviceType}</p>
-        </div>
-        <span className={`order-badge order-badge--${order.status}`}>
+    <div className="dev-app__screen dev-app__screen--detail">
+      <header className="dev-app__subheader">
+        <button type="button" className="dev-app__back" onClick={onBack}>
+          <ArrowLeft size={20} />
+          უკან
+        </button>
+        <span className={`dev-task-card__status dev-task-card__status--${order.status}`}>
           {ORDER_STATUS_LABELS[order.status] ?? order.status}
         </span>
-      </div>
+      </header>
 
-      <section className="dev-detail__section">
-        <p className="dev-detail__priority">
+      <div className="dev-task-detail">
+        <h2 className="dev-task-detail__title">{order.serviceType}</h2>
+        <p className="dev-task-detail__priority">
           პრიორიტეტი: {ORDER_PRIORITY_LABELS[order.priority] ?? '—'}
         </p>
-        <h3 className="dev-detail__section-title">აღწერა</h3>
-        <p className="dev-detail__description">{order.description}</p>
-        <p className="dev-detail__meta">შექმნილია: {formatOrderDate(order.createdAt)}</p>
-      </section>
+        <section className="dev-task-detail__block">
+          <h3>აღწერა</h3>
+          <p>{order.description}</p>
+        </section>
+        <section className="dev-task-detail__block">
+          <h3>დეტალები</h3>
+          <dl className="dev-task-detail__facts">
+            <div>
+              <dt>კლიენტი</dt>
+              <dd>{order.customerName}</dd>
+            </div>
+            <div>
+              <dt>თარიღი</dt>
+              <dd>{formatOrderDate(order.createdAt)}</dd>
+            </div>
+            {order.developerPayout > 0 && (
+              <div>
+                <dt>ანაზღაურება</dt>
+                <dd className="dev-task-detail__payout">{formatOrderAmount(order.developerPayout)}</dd>
+              </div>
+            )}
+          </dl>
+        </section>
+      </div>
 
-      <section className="dev-detail__section">
-        <h3 className="dev-detail__section-title">ანაზღაურება</h3>
-        {order.developerPayout != null && order.developerPayout > 0 ? (
-          <div className="dev-detail__payout">
-            <span className="dev-detail__payout-amount">
-              {formatOrderAmount(order.developerPayout)}
-            </span>
-            <DeveloperPayoutBadge order={order} />
-          </div>
-        ) : (
-          <p className="dev-detail__empty-text">ანაზღაურება ჯერ არ არის დაფიქსირებული.</p>
-        )}
-      </section>
-
-      <section className="dev-detail__section">
-        <h3 className="dev-detail__section-title">მენეჯერის შენიშვნები</h3>
-        {notes.length === 0 ? (
-          <p className="dev-detail__empty-text">შენიშვნები არ არის.</p>
-        ) : (
-          <ul className="dev-notes">
-            {notes.map((note, index) => (
-              <li key={`${note.createdAt?.seconds ?? index}-${index}`} className="dev-note">
-                <p>{note.text}</p>
-                <span>
-                  {note.authorName} · {formatOrderNoteTime(note.createdAt)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="dev-detail__section">
-        <h3 className="dev-detail__section-title">სტატუსის განახლება</h3>
-        <div className="dev-detail__row">
-          <select
-            className="dev-detail__select"
-            value={statusValue}
-            onChange={(e) => setStatusValue(e.target.value)}
-            disabled={submitting || order.status === ORDER_STATUS.CANCELLED}
-          >
-            <option value={ORDER_STATUS.ASSIGNED}>{ORDER_STATUS_LABELS.assigned}</option>
-            {DEVELOPER_STATUS_OPTIONS.map((status) => (
-              <option key={status} value={status}>
-                {ORDER_STATUS_LABELS[status]}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            className="btn btn--primary btn--sm"
-            onClick={handleStatusUpdate}
-            disabled={
-              submitting ||
-              statusValue === order.status ||
-              order.status === ORDER_STATUS.CANCELLED
-            }
-          >
-            <RefreshCw size={16} />
-            განახლება
-          </button>
+      {(canStart || canComplete) && (
+        <div className="dev-app__actions">
+          {canStart && (
+            <button
+              type="button"
+              className="btn btn--primary btn--lg dev-app__action-btn"
+              onClick={handleStart}
+              disabled={submitting}
+            >
+              {submitting ? <Loader2 size={18} className="dev-app__spin" /> : <Play size={18} />}
+              სამუშაოს დაწყება
+            </button>
+          )}
+          {canComplete && (
+            <button
+              type="button"
+              className="btn btn--primary btn--lg dev-app__action-btn"
+              onClick={handleComplete}
+              disabled={submitting}
+            >
+              {submitting ? <Loader2 size={18} className="dev-app__spin" /> : <CheckCircle2 size={18} />}
+              დასრულება
+            </button>
+          )}
         </div>
-      </section>
+      )}
+    </div>
+  )
+}
+
+function ProfileScreen({ user, userProfile, onError }) {
+  const [editing, setEditing] = useState(false)
+  const [bio, setBio] = useState(userProfile?.bio || '')
+  const [experienceCategories, setExperienceCategories] = useState(
+    userProfile?.experienceCategories || [],
+  )
+  const [experienceYears, setExperienceYears] = useState(userProfile?.experienceYears || '')
+  const [fieldErrors, setFieldErrors] = useState({})
+  const [saving, setSaving] = useState(false)
+
+  const handleSave = async (e) => {
+    e.preventDefault()
+    const errors = validateDeveloperCv({ bio, experienceCategories, experienceYears })
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
+
+    setSaving(true)
+    try {
+      await updateDeveloperProfile(user.uid, {
+        bio: bio.trim(),
+        experienceCategories,
+        experienceYears,
+      })
+      setEditing(false)
+    } catch (err) {
+      onError(err.message || 'პროფილის შენახვა ვერ მოხერხდა.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="dev-app__screen dev-app__screen--profile">
+      <div className="dev-profile-card">
+        <div className="dev-profile-card__avatar">
+          <User size={32} />
+        </div>
+        <h2>{userProfile?.name || 'შემსრულებელი'}</h2>
+        <p className="dev-profile-card__email">{userProfile?.email || user?.email}</p>
+        <p className="dev-profile-card__rating">{formatDeveloperRating(userProfile)}</p>
+      </div>
+
+      {!editing ? (
+        <div className="dev-profile-view">
+          <section className="dev-profile-view__section">
+            <div className="dev-profile-view__head">
+              <h3>ჩემს შესახებ</h3>
+              <button
+                type="button"
+                className="dev-profile-view__edit"
+                onClick={() => setEditing(true)}
+              >
+                <Pencil size={14} />
+                რედაქტირება
+              </button>
+            </div>
+            <p>{userProfile?.bio || 'აღწერა ჯერ არ არის შევსებული.'}</p>
+          </section>
+          <section className="dev-profile-view__section">
+            <h3>გამოცდილება</h3>
+            <p>{formatExperienceYears(userProfile?.experienceYears)}</p>
+          </section>
+          <section className="dev-profile-view__section">
+            <h3>კატეგორიები</h3>
+            <p>{formatExperienceCategories(userProfile?.experienceCategories)}</p>
+          </section>
+        </div>
+      ) : (
+        <form className="dev-profile-edit" onSubmit={handleSave}>
+          <DeveloperCvFields
+            idPrefix="dev-profile"
+            bio={bio}
+            onBioChange={setBio}
+            experienceCategories={experienceCategories}
+            onExperienceCategoriesChange={setExperienceCategories}
+            experienceYears={experienceYears}
+            onExperienceYearsChange={setExperienceYears}
+            fieldErrors={fieldErrors}
+            disabled={saving}
+          />
+          <div className="dev-profile-edit__actions">
+            <button
+              type="button"
+              className="btn btn--outline"
+              onClick={() => setEditing(false)}
+              disabled={saving}
+            >
+              გაუქმება
+            </button>
+            <button type="submit" className="btn btn--primary" disabled={saving}>
+              {saving ? <Loader2 size={16} className="dev-app__spin" /> : <Save size={16} />}
+              შენახვა
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   )
 }
 
 function DeveloperDashboard() {
-  usePageMeta(pageTitle('ჩემი შეკვეთები'), 'DIGIT — შემსრულებლის პანელი.')
+  usePageMeta(pageTitle('ჩემი ტასკები'), 'DIGIT — შემსრულებლის აპლიკაცია.')
 
   const { user, userProfile, logout } = useAuth()
-  const [mainTab, setMainTab] = useState('orders')
-  const [tab, setTab] = useState('active')
+  const [tab, setTab] = useState('tasks')
+  const [selectedOrderId, setSelectedOrderId] = useState(null)
+  const [detailReadOnly, setDetailReadOnly] = useState(false)
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
-  const [selectedOrderId, setSelectedOrderId] = useState(null)
   const [error, setError] = useState('')
-
-  const handleOrderMissing = useCallback(() => {
-    setSelectedOrderId(null)
-  }, [])
 
   useEffect(() => {
     if (!user?.uid) return undefined
@@ -261,7 +306,7 @@ function DeveloperDashboard() {
         setLoading(false)
       },
       (err) => {
-        setError(err.message || 'შეკვეთების ჩატვირთვა ვერ მოხერხდა.')
+        setError(err.message || 'ტასკების ჩატვირთვა ვერ მოხერხდა.')
         setLoading(false)
       },
     )
@@ -270,159 +315,123 @@ function DeveloperDashboard() {
   }, [user?.uid])
 
   const { active, archived } = useMemo(() => partitionDeveloperOrders(orders), [orders])
-  const stats = useMemo(() => getDeveloperOrderStats(orders), [orders])
-  const payoutStats = useMemo(() => getDeveloperPayoutStats(orders), [orders])
-  const visibleOrders = tab === 'active' ? active : archived
-  const selectedOrderIdResolved =
-    selectedOrderId && visibleOrders.some((order) => order.id === selectedOrderId)
-      ? selectedOrderId
-      : visibleOrders[0]?.id ?? null
 
-  const handleTabChange = (nextTab) => {
-    setTab(nextTab)
-    const pool = nextTab === 'active' ? active : archived
-    setSelectedOrderId(pool[0]?.id ?? null)
+  const openTask = useCallback((orderId, readOnly = false) => {
+    setDetailReadOnly(readOnly)
+    setSelectedOrderId(orderId)
+    setError('')
+  }, [])
+
+  const closeTask = useCallback(() => {
+    setSelectedOrderId(null)
+    setDetailReadOnly(false)
+  }, [])
+
+  if (selectedOrderId) {
+    return (
+      <div className="dev-app">
+        {error && <div className="dev-app__error">{error}</div>}
+        <TaskDetailScreen
+          orderId={selectedOrderId}
+          onBack={closeTask}
+          onError={setError}
+          readOnly={detailReadOnly}
+        />
+      </div>
+    )
   }
 
   return (
-    <div className="dashboard dev-dashboard">
-      <header className="dashboard-header dev-dashboard__header">
-        <div className="dashboard-header__brand">
-          <span className="dashboard-header__badge dev-dashboard__badge">Executor</span>
-          <h1 className="dashboard-header__title">შემსრულებლის პანელი</h1>
-        </div>
-        <div className="dashboard-header__actions">
-          <div className="dashboard-main-tabs">
-            <button
-              type="button"
-              className={`dashboard-main-tab ${mainTab === 'orders' ? 'dashboard-main-tab--active' : ''}`}
-              onClick={() => setMainTab('orders')}
-            >
-              <ClipboardList size={16} />
-              ჩემი შეკვეთები
-            </button>
-            <button
-              type="button"
-              className={`dashboard-main-tab ${mainTab === 'profile' ? 'dashboard-main-tab--active' : ''}`}
-              onClick={() => setMainTab('profile')}
-            >
-              <User size={16} />
-              პროფილი
-            </button>
+    <div className="dev-app">
+      <header className="dev-app__header">
+        <div className="dev-app__brand">
+          <DigitMark size="sm" />
+          <div>
+            <span className="dev-app__label">შემსრულებელი</span>
+            <strong>{userProfile?.name || 'ჩემი ტასკები'}</strong>
           </div>
-          <Link to="/" className="dashboard-header__link">
-            <Home size={18} />
-            საიტზე დაბრუნება
-          </Link>
-          <button type="button" className="dashboard-header__link" onClick={logout}>
-            <LogOut size={18} />
-            გასვლა
-          </button>
         </div>
+        <button type="button" className="dev-app__logout" onClick={logout} aria-label="გასვლა">
+          <LogOut size={18} />
+        </button>
       </header>
 
-      {error && <div className="dashboard-error">{error}</div>}
+      {error && <div className="dev-app__error">{error}</div>}
 
-      {mainTab === 'profile' ? (
-        <div className="dev-dashboard__profile-wrap">
-          <DeveloperProfilePanel user={user} userProfile={userProfile} onError={setError} />
-        </div>
-      ) : (
-        <>
-          <div className="dev-dashboard__stats">
-            <article className="dev-stat-card">
-              <ClipboardList size={22} className="dev-stat-card__icon" />
-              <div>
-                <span className="dev-stat-card__value">{stats.activeCount}</span>
-                <span className="dev-stat-card__label">აქტიური</span>
+      <main className="dev-app__main">
+        {tab === 'tasks' && (
+          <div className="dev-app__screen">
+            <h1 className="dev-app__title">აქტიური ტასკები</h1>
+            {loading ? (
+              <div className="dev-app__empty">იტვირთება...</div>
+            ) : active.length === 0 ? (
+              <div className="dev-app__empty">
+                <ClipboardList size={40} />
+                <p>ახლა აქტიური ტასკები არ გაქვს.</p>
+                <span>მენეჯერი მოგინიჭებს ახალ ტასკს, როცა მზად იქნება.</span>
               </div>
-            </article>
-            <article className="dev-stat-card">
-              <ClipboardList size={22} className="dev-stat-card__icon dev-stat-card__icon--green" />
-              <div>
-                <span className="dev-stat-card__value">{stats.completedThisMonth}</span>
-                <span className="dev-stat-card__label">დასრულებული ამ თვეში</span>
+            ) : (
+              <div className="dev-task-list">
+                {active.map((order) => (
+                  <TaskCard key={order.id} order={order} onClick={(id) => openTask(id, false)} />
+                ))}
               </div>
-            </article>
-            <article className="dev-stat-card dev-stat-card--payout">
-              <ClipboardList size={22} className="dev-stat-card__icon dev-stat-card__icon--amber" />
-              <div>
-                <span className="dev-stat-card__value">
-                  {formatOrderAmount(payoutStats.pendingTotal)}
-                </span>
-                <span className="dev-stat-card__label">მისაღები</span>
-              </div>
-            </article>
+            )}
           </div>
+        )}
 
-          <div className="dev-dashboard__body">
-            <aside className="dev-dashboard__sidebar">
-              <div className="dashboard-filters">
-                <button
-                  type="button"
-                  className={`dashboard-filter ${tab === 'active' ? 'dashboard-filter--active' : ''}`}
-                  onClick={() => handleTabChange('active')}
-                >
-                  <ListChecks size={14} />
-                  აქტიური ({active.length})
-                </button>
-                <button
-                  type="button"
-                  className={`dashboard-filter ${tab === 'archived' ? 'dashboard-filter--active' : ''}`}
-                  onClick={() => handleTabChange('archived')}
-                >
-                  <Archive size={14} />
-                  დასრულებული ({archived.length})
-                </button>
+        {tab === 'completed' && (
+          <div className="dev-app__screen">
+            <h1 className="dev-app__title">შესრულებული ტასკები</h1>
+            {loading ? (
+              <div className="dev-app__empty">იტვირთება...</div>
+            ) : archived.length === 0 ? (
+              <div className="dev-app__empty">
+                <History size={40} />
+                <p>შესრულებული ტასკები ჯერ არ გაქვს.</p>
               </div>
-
-              <div className="dev-dashboard__list">
-                {loading ? (
-                  <p className="dashboard-list__empty">იტვირთება...</p>
-                ) : visibleOrders.length === 0 ? (
-                  <p className="dashboard-list__empty">
-                    {tab === 'active' ? 'აქტიური შეკვეთები არ გაქვს.' : 'დასრულებული შეკვეთები არ არის.'}
-                  </p>
-                ) : (
-                  visibleOrders.map((order) => (
-                    <button
-                      key={order.id}
-                      type="button"
-                      className={`dev-order-card ${selectedOrderIdResolved === order.id ? 'dev-order-card--active' : ''}`}
-                      onClick={() => {
-                        setSelectedOrderId(order.id)
-                        setError('')
-                      }}
-                    >
-                      <div className="dev-order-card__top">
-                        <span className="dev-order-card__name">{order.customerName}</span>
-                        <span className={`order-badge order-badge--${order.status}`}>
-                          {ORDER_STATUS_LABELS[order.status] ?? order.status}
-                        </span>
-                      </div>
-                      <p className="dev-order-card__service">{order.serviceType}</p>
-                      <span className="dev-order-card__date">{formatOrderDate(order.createdAt)}</span>
-                    </button>
-                  ))
-                )}
+            ) : (
+              <div className="dev-task-list">
+                {archived.map((order) => (
+                  <TaskCard key={order.id} order={order} onClick={(id) => openTask(id, true)} />
+                ))}
               </div>
-            </aside>
-
-            <main className="dev-dashboard__main">
-              {!selectedOrderIdResolved ? (
-                <div className="dev-detail__empty">აირჩიეთ შეკვეთა სიიდან</div>
-              ) : (
-                <DeveloperOrderDetail
-                  key={selectedOrderIdResolved}
-                  orderId={selectedOrderIdResolved}
-                  onError={setError}
-                  onMissing={handleOrderMissing}
-                />
-              )}
-            </main>
+            )}
           </div>
-        </>
-      )}
+        )}
+
+        {tab === 'profile' && (
+          <ProfileScreen user={user} userProfile={userProfile} onError={setError} />
+        )}
+      </main>
+
+      <nav className="dev-app__tabs" aria-label="ძირითადი ნავიგაცია">
+        <button
+          type="button"
+          className={`dev-app__tab ${tab === 'tasks' ? 'dev-app__tab--active' : ''}`}
+          onClick={() => setTab('tasks')}
+        >
+          <ClipboardList size={20} />
+          <span>ტასკები</span>
+          {active.length > 0 && <em className="dev-app__badge">{active.length}</em>}
+        </button>
+        <button
+          type="button"
+          className={`dev-app__tab ${tab === 'completed' ? 'dev-app__tab--active' : ''}`}
+          onClick={() => setTab('completed')}
+        >
+          <History size={20} />
+          <span>შესრულებული</span>
+        </button>
+        <button
+          type="button"
+          className={`dev-app__tab ${tab === 'profile' ? 'dev-app__tab--active' : ''}`}
+          onClick={() => setTab('profile')}
+        >
+          <User size={20} />
+          <span>პროფილი</span>
+        </button>
+      </nav>
     </div>
   )
 }

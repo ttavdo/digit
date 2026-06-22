@@ -3,6 +3,7 @@ import { Link, Navigate } from 'react-router-dom'
 import { CheckCircle2, LayoutDashboard, Loader2, LogOut, ShieldCheck, XCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import FirebaseSetupNotice from '../components/FirebaseSetupNotice'
+import DeveloperCvSummary from '../components/DeveloperCvSummary'
 import {
   approveDeveloperRequest,
   rejectDeveloperRequest,
@@ -217,6 +218,7 @@ function AdminRequestsPanel() {
               <div className="admin-request__info">
                 <strong>{request.name || 'უსახელო'}</strong>
                 <span>{request.email}</span>
+                <DeveloperCvSummary profile={request} />
               </div>
               <div className="admin-request__buttons">
                 <button

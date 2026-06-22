@@ -8,10 +8,11 @@ function requireDb() {
   return db
 }
 
-export async function updateDeveloperProfile(userId, { bio, skills }) {
+export async function updateDeveloperProfile(userId, { bio, experienceCategories, experienceYears }) {
   const firestore = requireDb()
   await updateDoc(doc(firestore, 'users', userId), {
     bio: bio || '',
-    skills: skills || [],
+    experienceCategories: experienceCategories || [],
+    experienceYears: experienceYears || '',
   })
 }

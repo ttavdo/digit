@@ -44,6 +44,15 @@ function App() {
         <Route path="/admin" element={<Admin />} />
 
         <Route
+          path="/developer-dashboard"
+          element={
+            <RoleProtectedRoute allowedRoles={['developer']}>
+              <DeveloperDashboard />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
           path="/dashboard"
           element={
             <RoleProtectedRoute allowedRoles={['manager']}>
@@ -55,15 +64,6 @@ function App() {
         <Route
           path="/dashboard/orders"
           element={<Navigate to="/dashboard" replace />}
-        />
-
-        <Route
-          path="/developer-dashboard"
-          element={
-            <RoleProtectedRoute allowedRoles={['developer']}>
-              <DeveloperDashboard />
-            </RoleProtectedRoute>
-          }
         />
       </Routes>
     </AuthProvider>

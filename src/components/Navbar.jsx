@@ -18,8 +18,7 @@ function getNavLinks(role, isAuthenticated) {
 
   if (role === 'developer') {
     return [
-      { to: '/', label: 'მთავარი', end: true },
-      { to: '/developer-dashboard', label: 'ჩემი შეკვეთები' },
+      { to: '/developer-dashboard', label: 'ჩემი ტასკები', end: true },
     ]
   }
 
