@@ -9,6 +9,7 @@ import {
   ArrowRight,
   CircleHelp,
   LayoutGrid,
+  ClipboardList,
 } from 'lucide-react'
 import Reveal from '../components/Reveal'
 import ControlBridge from '../components/ControlBridge'
@@ -19,22 +20,22 @@ import './Home.css'
 
 const steps = [
   {
-    icon: MessageCircle,
+    icon: ClipboardList,
     step: '01',
-    title: 'დაგვიკავშირდი',
-    description: 'აღწერე პრობლემა ან საჭირო სერვისი — მოკლე ფორმით ან ჩატით.',
+    title: 'გამოიძახე დახმარება',
+    description: 'აირჩიე კატეგორია, აღწერე პრობლემა და მიუთითე პრიორიტეტი — ისევე მარტივად, როგორც ტაქსი.',
   },
   {
     icon: UserSearch,
     step: '02',
-    title: 'მენეჯერი პოულობს სპეციალისტს',
-    description: 'ჩვენი მენეჯერი შეარჩევს გადამოწმებულ სპეციალისტს თქვენს ამოცანისთვის.',
+    title: 'მენეჯერი აფასებს',
+    description: 'მენეჯერი განგებს ფასს და გიგზავნის შეთავაზებას დადასტურებისთვის.',
   },
   {
     icon: ShieldCheck,
     step: '03',
-    title: 'სამუშაო სრულდება გარანტირებულად',
-    description: 'სამუშაო სრულდება ხარისხის კონტროლით და გარანტიით.',
+    title: 'შემსრულებელი მუშაობს',
+    description: 'ფასის დადასტურების შემდეგ საქმე მიდის გადამოწმებულ შემსრულებელთან.',
   },
 ]
 
@@ -85,8 +86,8 @@ function Home() {
             </Reveal>
             <Reveal delay={240} className="hero__actions">
               <Link to="/contact" className="btn btn--primary btn--lg">
-                <MessageCircle size={18} />
-                დაიწყე საუბარი
+                <ClipboardList size={18} />
+                გამოიძახე დახმარება
                 <ArrowRight size={18} />
               </Link>
               <Link to="/about" className="btn btn--outline btn--lg hero__btn-outline">
@@ -215,8 +216,8 @@ function Home() {
               აღწერე შენი ამოცანა — მენეჯერი მალე დაგიკავშირდება და პროცესი ხელში აიღებს.
             </p>
             <Link to="/contact" className="btn btn--accent btn--lg">
-              <MessageCircle size={18} />
-              დაიწყე საუბარი
+              <ClipboardList size={18} />
+              გამოიძახე დახმარება
               <ArrowRight size={18} />
             </Link>
           </Reveal>

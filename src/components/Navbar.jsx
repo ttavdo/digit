@@ -11,7 +11,6 @@ const PUBLIC_LINKS = [
   { to: '/', label: 'მთავარი', end: true },
   { to: '/services', label: 'სერვისები' },
   { to: '/about', label: 'ჩვენ შესახებ' },
-  { to: '/contact', label: 'დაკავშირება' },
 ]
 
 function getNavLinks(role, isAuthenticated) {
@@ -20,7 +19,6 @@ function getNavLinks(role, isAuthenticated) {
   if (role === 'developer') {
     return [
       { to: '/', label: 'მთავარი', end: true },
-      { to: '/about', label: 'ჩვენ შესახებ' },
       { to: '/developer-dashboard', label: 'ჩემი შეკვეთები' },
     ]
   }
@@ -28,9 +26,16 @@ function getNavLinks(role, isAuthenticated) {
   if (role === 'manager') {
     return [
       { to: '/', label: 'მთავარი', end: true },
+      { to: '/dashboard', label: 'თიქეტები' },
+    ]
+  }
+
+  if (role === 'customer') {
+    return [
+      { to: '/', label: 'მთავარი', end: true },
       { to: '/services', label: 'სერვისები' },
-      { to: '/about', label: 'ჩვენ შესახებ' },
-      { to: '/dashboard', label: 'Dashboard' },
+      { to: '/contact', label: 'ახალი მოთხოვნა' },
+      { to: '/my-requests', label: 'ჩემი მოთხოვნები' },
     ]
   }
 

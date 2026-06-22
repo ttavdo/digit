@@ -3,6 +3,7 @@ import {
   arrayUnion,
   collection,
   doc,
+  getDoc,
   onSnapshot,
   orderBy,
   query,
@@ -15,6 +16,9 @@ import { db } from '../firebase'
 
 export const ORDER_STATUS = {
   NEW: 'new',
+  QUOTE_OFFERED: 'quote_offered',
+  QUOTE_CONFIRMED: 'quote_confirmed',
+  QUOTE_REJECTED: 'quote_rejected',
   ASSIGNED: 'assigned',
   IN_PROGRESS: 'in_progress',
   COMPLETED: 'completed',
@@ -23,13 +27,33 @@ export const ORDER_STATUS = {
 
 export const ORDER_STATUS_LABELS = {
   new: 'ახალი',
+  quote_offered: 'ფასი შეთავაზებული',
+  quote_confirmed: 'ფასი დადასტურებული',
+  quote_rejected: 'ფასი უარყოფილი',
   assigned: 'მინიჭებული',
   in_progress: 'მიმდინარე',
   completed: 'დასრულებული',
   cancelled: 'გაუქმებული',
 }
 
-// TODO: ნამდვილი გადახდის ინტეგრაცია (Stripe ან მსგავსი) მომავალში — ეს ველები ჯერ მხოლოდ ხელით-მართვადი ტრეკინგისთვისაა.
+export const ORDER_PRIORITY = {
+  URGENT: 'urgent',
+  TOMORROW: 'tomorrow',
+  FLEXIBLE: 'flexible',
+}
+
+export const ORDER_PRIORITY_LABELS = {
+  urgent: 'სასწრაფო',
+  tomorrow: 'ხვალ',
+  flexible: 'შეიძლება დაელოდოს',
+}
+
+const PRIORITY_SORT_WEIGHT = {
+  [ORDER_PRIORITY.URGENT]: 0,
+  [ORDER_PRIORITY.TOMORROW]: 1,
+  [ORDER_PRIORITY.FLEXIBLE]: 2,
+}
+
 export const PAYMENT_STATUS = {
   UNPAID: 'unpaid',
   PAID: 'paid',
@@ -57,29 +81,32 @@ function requireDb() {
   return db
 }
 
-export async function createOrder({
-  conversationId,
+export async function createTicket({
   customerId,
   customerName,
+  serviceId,
   serviceType,
   description,
+  priority,
 }) {
   const firestore = requireDb()
   const ref = await addDoc(collection(firestore, 'orders'), {
-    conversationId,
     customerId,
     customerName,
+    serviceId: serviceId || null,
     serviceType,
     description,
+    priority,
     status: ORDER_STATUS.NEW,
     assignedDeveloperId: null,
     assignedDeveloperName: null,
     managerNotes: [],
-    // TODO: ნამდვილი გადახდის ინტეგრაცია (Stripe ან მსგავსი) მომავალში — ხელით-მართვადი ტრეკინგი.
     price: null,
     paymentStatus: PAYMENT_STATUS.UNPAID,
     developerPayout: null,
     payoutStatus: PAYOUT_STATUS.PENDING,
+    customerRating: null,
+    customerReview: null,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   })
@@ -96,6 +123,27 @@ export function subscribeToOrders(statusFilter, onOrders, onError) {
           where('status', '==', statusFilter),
           orderBy('updatedAt', 'desc'),
         )
+
+  return onSnapshot(
+    ordersQuery,
+    (snapshot) => {
+      const orders = snapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data(),
+      }))
+      onOrders(sortOrdersByPriority(orders))
+    },
+    onError,
+  )
+}
+
+export function subscribeToCustomerOrders(customerId, onOrders, onError) {
+  const firestore = requireDb()
+  const ordersQuery = query(
+    collection(firestore, 'orders'),
+    where('customerId', '==', customerId),
+    orderBy('updatedAt', 'desc'),
+  )
 
   return onSnapshot(
     ordersQuery,
@@ -164,15 +212,35 @@ export function subscribeToDeveloperOrders(developerId, onOrders, onError) {
   )
 }
 
-export const ACTIVE_ORDER_STATUSES = [ORDER_STATUS.ASSIGNED, ORDER_STATUS.IN_PROGRESS]
-export const ARCHIVED_ORDER_STATUSES = [ORDER_STATUS.COMPLETED, ORDER_STATUS.CANCELLED]
+export const ACTIVE_ORDER_STATUSES = [
+  ORDER_STATUS.ASSIGNED,
+  ORDER_STATUS.IN_PROGRESS,
+]
+export const ARCHIVED_ORDER_STATUSES = [
+  ORDER_STATUS.COMPLETED,
+  ORDER_STATUS.CANCELLED,
+  ORDER_STATUS.QUOTE_REJECTED,
+]
 
 const STATUS_SORT_WEIGHT = {
   [ORDER_STATUS.IN_PROGRESS]: 0,
   [ORDER_STATUS.ASSIGNED]: 1,
-  [ORDER_STATUS.NEW]: 2,
-  [ORDER_STATUS.COMPLETED]: 3,
-  [ORDER_STATUS.CANCELLED]: 4,
+  [ORDER_STATUS.QUOTE_CONFIRMED]: 2,
+  [ORDER_STATUS.QUOTE_OFFERED]: 3,
+  [ORDER_STATUS.NEW]: 4,
+  [ORDER_STATUS.COMPLETED]: 5,
+  [ORDER_STATUS.CANCELLED]: 6,
+  [ORDER_STATUS.QUOTE_REJECTED]: 7,
+}
+
+export function sortOrdersByPriority(orders) {
+  return [...orders].sort((a, b) => {
+    const priorityDiff =
+      (PRIORITY_SORT_WEIGHT[a.priority] ?? 99) -
+      (PRIORITY_SORT_WEIGHT[b.priority] ?? 99)
+    if (priorityDiff !== 0) return priorityDiff
+    return (b.updatedAt?.toMillis?.() ?? 0) - (a.updatedAt?.toMillis?.() ?? 0)
+  })
 }
 
 export function partitionDeveloperOrders(orders) {
@@ -232,7 +300,6 @@ function getPayoutAmount(order) {
     : 0
 }
 
-/** Payout totals for developer dashboard — manual tracking only for now. */
 export function getDeveloperPayoutStats(orders) {
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -266,6 +333,13 @@ export function formatOrderAmount(amount) {
   const value = Number(amount)
   if (Number.isNaN(value)) return '—'
   return `${value.toLocaleString('ka-GE', { maximumFractionDigits: 2 })} ₾`
+}
+
+export function formatDeveloperRating(developer) {
+  const avg = developer?.ratingAvg
+  const count = developer?.ratingCount ?? 0
+  if (!count || avg == null) return 'ახალი'
+  return `${avg.toFixed(1)} ★ (${count})`
 }
 
 export function parseOrderAmountInput(raw) {
@@ -311,7 +385,79 @@ export function filterOrdersByCompensation(orders, compensationFilter) {
   })
 }
 
-// TODO: ნამდვილი გადახდის ინტეგრაცია (Stripe ან მსგავსი) მომავალში — manager manually sets these fields.
+export async function offerOrderPrice(orderId, price) {
+  if (price == null || price <= 0) {
+    throw new Error('შეიყვანეთ სწორი ფასი.')
+  }
+
+  const firestore = requireDb()
+  await updateDoc(doc(firestore, 'orders', orderId), {
+    price,
+    status: ORDER_STATUS.QUOTE_OFFERED,
+    updatedAt: serverTimestamp(),
+  })
+}
+
+export async function confirmOrderPrice(orderId) {
+  const firestore = requireDb()
+  await updateDoc(doc(firestore, 'orders', orderId), {
+    status: ORDER_STATUS.QUOTE_CONFIRMED,
+    updatedAt: serverTimestamp(),
+  })
+}
+
+export async function rejectOrderPrice(orderId) {
+  const firestore = requireDb()
+  await updateDoc(doc(firestore, 'orders', orderId), {
+    status: ORDER_STATUS.QUOTE_REJECTED,
+    updatedAt: serverTimestamp(),
+  })
+}
+
+export async function submitOrderRating(orderId, developerId, { rating, review }) {
+  const value = Number(rating)
+  if (!Number.isInteger(value) || value < 1 || value > 5) {
+    throw new Error('რეიტინგი უნდა იყოს 1-დან 5-მდე.')
+  }
+
+  const firestore = requireDb()
+  const orderRef = doc(firestore, 'orders', orderId)
+  const orderSnap = await getDoc(orderRef)
+
+  if (!orderSnap.exists()) {
+    throw new Error('შეკვეთა ვერ მოიძებნა.')
+  }
+
+  const order = orderSnap.data()
+  if (order.status !== ORDER_STATUS.COMPLETED) {
+    throw new Error('რეიტინგი მხოლოდ დასრულებულ შეკვეთაზე შეიძლება.')
+  }
+  if (order.customerRating != null) {
+    throw new Error('ამ შეკვეთაზე უკვე გაქვს შეფასება.')
+  }
+
+  await updateDoc(orderRef, {
+    customerRating: value,
+    customerReview: review?.trim() || '',
+    updatedAt: serverTimestamp(),
+  })
+
+  if (developerId) {
+    const devRef = doc(firestore, 'users', developerId)
+    const devSnap = await getDoc(devRef)
+    if (devSnap.exists()) {
+      const data = devSnap.data()
+      const count = (data.ratingCount ?? 0) + 1
+      const sum = (data.ratingSum ?? 0) + value
+      await updateDoc(devRef, {
+        ratingCount: count,
+        ratingSum: sum,
+        ratingAvg: sum / count,
+      })
+    }
+  }
+}
+
 export async function updateOrderCompensation(orderId, { price, developerPayout }) {
   const firestore = requireDb()
   const payload = { updatedAt: serverTimestamp() }
@@ -375,6 +521,14 @@ export async function updateDeveloperOrderStatus(orderId, status) {
 
 export async function assignDeveloperToOrder(orderId, { developerId, developerName }) {
   const firestore = requireDb()
+  const orderSnap = await getDoc(doc(firestore, 'orders', orderId))
+  if (!orderSnap.exists()) {
+    throw new Error('შეკვეთა ვერ მოიძებნა.')
+  }
+  if (orderSnap.data().status !== ORDER_STATUS.QUOTE_CONFIRMED) {
+    throw new Error('მინიჭება შესაძლებელია მხოლოდ ფასის დადასტურების შემდეგ.')
+  }
+
   await updateDoc(doc(firestore, 'orders', orderId), {
     assignedDeveloperId: developerId,
     assignedDeveloperName: developerName,
@@ -418,4 +572,12 @@ export function formatOrderNoteTime(timestamp) {
     minute: '2-digit',
     hour12: false,
   })
+}
+
+export function canAssignDeveloper(order) {
+  return order?.status === ORDER_STATUS.QUOTE_CONFIRMED
+}
+
+export function canOfferPrice(order) {
+  return order?.status === ORDER_STATUS.NEW || order?.status === ORDER_STATUS.QUOTE_REJECTED
 }

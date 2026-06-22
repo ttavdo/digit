@@ -285,6 +285,59 @@ textarea:focus-visible {
   flex-shrink: 0;
 }
 
+/* ── Ticket priority & status badges ── */
+.priority-badge {
+  flex-shrink: 0;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.priority-badge--urgent {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.priority-badge--tomorrow {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.priority-badge--flexible {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.order-badge--quote_offered {
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.12);
+}
+
+.order-badge--quote_confirmed {
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.12);
+}
+
+.order-badge--quote_rejected {
+  color: var(--color-error);
+  background: var(--color-error-bg);
+}
+
+.orders-detail__badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+.orders-detail__row--actions {
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
 /* ── Relay accent ── */
 .relay-line {
   display: block;

@@ -3,6 +3,7 @@ import {
   Banknote,
   RefreshCw,
   Save,
+  Send,
   StickyNote,
   UserCheck,
   Wallet,
@@ -10,10 +11,15 @@ import {
 import {
   addOrderNote,
   assignDeveloperToOrder,
+  canAssignDeveloper,
+  canOfferPrice,
   filterOrdersByCompensation,
+  formatDeveloperRating,
   formatOrderAmount,
   formatOrderDate,
   formatOrderNoteTime,
+  offerOrderPrice,
+  ORDER_PRIORITY_LABELS,
   ORDER_STATUS,
   ORDER_STATUS_LABELS,
   parseOrderAmountInput,
@@ -37,10 +43,11 @@ import './ManagerOrdersPanel.css'
 const STATUS_FILTERS = [
   { value: 'all', label: 'ყველა' },
   { value: ORDER_STATUS.NEW, label: ORDER_STATUS_LABELS.new },
+  { value: ORDER_STATUS.QUOTE_OFFERED, label: ORDER_STATUS_LABELS.quote_offered },
+  { value: ORDER_STATUS.QUOTE_CONFIRMED, label: ORDER_STATUS_LABELS.quote_confirmed },
   { value: ORDER_STATUS.ASSIGNED, label: ORDER_STATUS_LABELS.assigned },
   { value: ORDER_STATUS.IN_PROGRESS, label: ORDER_STATUS_LABELS.in_progress },
   { value: ORDER_STATUS.COMPLETED, label: ORDER_STATUS_LABELS.completed },
-  { value: ORDER_STATUS.CANCELLED, label: ORDER_STATUS_LABELS.cancelled },
 ]
 
 // TODO: ნამდვილი გადახდის ინტეგრაცია (Stripe ან მსგავსი) მომავალში — ხელით ფილტრაცია paymentStatus/payoutStatus-ით.
@@ -117,6 +124,20 @@ function OrderDetail({ orderId, managerName, onError, onMissing }) {
     )
     return unsubscribe
   }, [onError])
+
+  const handleOfferPrice = async () => {
+    if (!orderId) return
+
+    setSubmitting(true)
+    try {
+      const price = parseOrderAmountInput(priceInput)
+      await offerOrderPrice(orderId, price)
+    } catch (err) {
+      onError(err.message || 'ფასის შეთავაზება ვერ მოხერხდა.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   const handleAssign = async () => {
     if (!orderId || !selectedDeveloperId) return
@@ -242,9 +263,14 @@ function OrderDetail({ orderId, managerName, onError, onMissing }) {
           <h2 className="orders-detail__title">{order.customerName}</h2>
           <p className="orders-detail__meta">{order.serviceType}</p>
         </div>
-        <span className={`order-badge order-badge--${order.status}`}>
-          {ORDER_STATUS_LABELS[order.status] ?? order.status}
-        </span>
+        <div className="orders-detail__badges-row">
+          <span className={`priority-badge priority-badge--${order.priority}`}>
+            {ORDER_PRIORITY_LABELS[order.priority] ?? order.priority}
+          </span>
+          <span className={`order-badge order-badge--${order.status}`}>
+            {ORDER_STATUS_LABELS[order.status] ?? order.status}
+          </span>
+        </div>
       </div>
 
       <section className="orders-detail__section">
@@ -253,49 +279,20 @@ function OrderDetail({ orderId, managerName, onError, onMissing }) {
         <p className="orders-detail__meta">
           შექმნილია: {formatOrderDate(order.createdAt)}
           {order.assignedDeveloperName && (
-            <> · დეველოპერი: {order.assignedDeveloperName}</>
+            <> · შემსრულებელი: {order.assignedDeveloperName}</>
           )}
         </p>
       </section>
 
-      <section className="orders-detail__section">
-        <h3 className="orders-detail__section-title">დეველოპერის მინიჭება</h3>
-        <div className="orders-detail__row">
-          <select
-            className="orders-detail__select"
-            value={selectedDeveloperId}
-            onChange={(e) => setSelectedDeveloperId(e.target.value)}
-            disabled={submitting}
-          >
-            <option value="">აირჩიე დეველოპერი</option>
-            {developers.map((dev) => (
-              <option key={dev.id} value={dev.id}>
-                {dev.name || dev.email}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            className="btn btn--primary btn--sm"
-            onClick={handleAssign}
-            disabled={submitting || !selectedDeveloperId}
-          >
-            <UserCheck size={16} />
-            მინიჭება
-          </button>
-        </div>
-      </section>
-
-      {/* TODO: ნამდვილი გადახდის ინტეგრაცია (Stripe ან მსგავსი) მომავალში — ეს ველები ჯერ მხოლოდ ხელით-მართვადი ტრეკინგისთვისაა. */}
       <section className="orders-detail__section orders-detail__section--compensation">
-        <h3 className="orders-detail__section-title">ანაზღაურების ტრეკინგი</h3>
+        <h3 className="orders-detail__section-title">ფასის შეთავაზება</h3>
         <p className="orders-detail__hint">
-          ფინანსური ინფორმაცია ჩანს მხოლოდ მენეჯერსა და შესაბამის დეველოპერს — არა მომხმარებელს.
+          დააფიქსირე ფასი და გაუგზავნე ბიზნესს დადასტურებისთვის.
         </p>
 
         <div className="orders-detail__comp-grid">
           <label className="orders-detail__field">
-            <span className="orders-detail__field-label">ფასი (₾)</span>
+            <span className="orders-detail__field-label">ფასი ბიზნესისთვის (₾)</span>
             <input
               type="number"
               min="0"
@@ -308,7 +305,7 @@ function OrderDetail({ orderId, managerName, onError, onMissing }) {
             />
           </label>
           <label className="orders-detail__field">
-            <span className="orders-detail__field-label">დეველოპერის ანაზღაურება (₾)</span>
+            <span className="orders-detail__field-label">შემსრულებლის ანაზღაურება (₾)</span>
             <input
               type="number"
               min="0"
@@ -322,15 +319,37 @@ function OrderDetail({ orderId, managerName, onError, onMissing }) {
           </label>
         </div>
 
-        <button
-          type="button"
-          className="btn btn--outline btn--sm orders-detail__save-comp"
-          onClick={handleSaveCompensation}
-          disabled={submitting}
-        >
-          <Save size={16} />
-          თანხების შენახვა
-        </button>
+        <div className="orders-detail__row orders-detail__row--actions">
+          {canOfferPrice(order) && (
+            <button
+              type="button"
+              className="btn btn--primary btn--sm"
+              onClick={handleOfferPrice}
+              disabled={submitting || !priceInput.trim()}
+            >
+              <Send size={16} />
+              ფასის შეთავაზება
+            </button>
+          )}
+          <button
+            type="button"
+            className="btn btn--outline btn--sm orders-detail__save-comp"
+            onClick={handleSaveCompensation}
+            disabled={submitting}
+          >
+            <Save size={16} />
+            თანხების შენახვა
+          </button>
+        </div>
+
+        {order.price != null && (
+          <p className="orders-detail__meta orders-detail__meta--saved">
+            შეთავაზებული ფასი: {formatOrderAmount(order.price)}
+            {order.developerPayout != null && (
+              <> · ანაზღაურება {formatOrderAmount(order.developerPayout)}</>
+            )}
+          </p>
+        )}
 
         <div className="orders-detail__badges">
           <PaymentStatusBadge order={order} />
@@ -357,13 +376,39 @@ function OrderDetail({ orderId, managerName, onError, onMissing }) {
             შემსრულებლისთვის გადარიცხულია
           </button>
         </div>
+      </section>
 
-        {(order.price != null || order.developerPayout != null) && (
-          <p className="orders-detail__meta orders-detail__meta--saved">
-            შენახული: ფასი {formatOrderAmount(order.price)} · ანაზღაურება{' '}
-            {formatOrderAmount(order.developerPayout)}
+      <section className="orders-detail__section">
+        <h3 className="orders-detail__section-title">შემსრულებლის მინიჭება</h3>
+        {!canAssignDeveloper(order) && order.status !== ORDER_STATUS.ASSIGNED && (
+          <p className="orders-detail__hint">
+            მინიჭება შესაძლებელია მხოლოდ ფასის დადასტურების შემდეგ.
           </p>
         )}
+        <div className="orders-detail__row">
+          <select
+            className="orders-detail__select"
+            value={selectedDeveloperId}
+            onChange={(e) => setSelectedDeveloperId(e.target.value)}
+            disabled={submitting || !canAssignDeveloper(order)}
+          >
+            <option value="">აირჩიე შემსრულებელი</option>
+            {developers.map((dev) => (
+              <option key={dev.id} value={dev.id}>
+                {dev.name || dev.email} — {formatDeveloperRating(dev)}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="btn btn--primary btn--sm"
+            onClick={handleAssign}
+            disabled={submitting || !selectedDeveloperId || !canAssignDeveloper(order)}
+          >
+            <UserCheck size={16} />
+            მინიჭება
+          </button>
+        </div>
       </section>
 
       <section className="orders-detail__section">
@@ -376,6 +421,8 @@ function OrderDetail({ orderId, managerName, onError, onMissing }) {
             disabled={submitting}
           >
             <option value={ORDER_STATUS.NEW}>{ORDER_STATUS_LABELS.new}</option>
+            <option value={ORDER_STATUS.QUOTE_OFFERED}>{ORDER_STATUS_LABELS.quote_offered}</option>
+            <option value={ORDER_STATUS.QUOTE_CONFIRMED}>{ORDER_STATUS_LABELS.quote_confirmed}</option>
             <option value={ORDER_STATUS.ASSIGNED}>{ORDER_STATUS_LABELS.assigned}</option>
             {MANUAL_STATUS_OPTIONS.map((status) => (
               <option key={status} value={status}>
@@ -529,6 +576,11 @@ function ManagerOrdersPanel({ managerName, initialOrderId, onError }) {
               >
                 <div className="orders-item__top">
                   <span className="orders-item__name">{order.customerName}</span>
+                  <span className={`priority-badge priority-badge--${order.priority}`}>
+                    {ORDER_PRIORITY_LABELS[order.priority] ?? ''}
+                  </span>
+                </div>
+                <div className="orders-item__top">
                   <span className={`order-badge order-badge--${order.status}`}>
                     {ORDER_STATUS_LABELS[order.status] ?? order.status}
                   </span>

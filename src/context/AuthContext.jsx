@@ -73,7 +73,7 @@ export function AuthProvider({ children }) {
     return unsubscribe
   }, [])
 
-  const signup = async (email, password, name, accountType = 'customer') => {
+  const signup = async (email, password, name, accountType = 'customer', extra = {}) => {
     assertFirebase()
     const profile = buildRegistrationProfile(email, accountType)
     const credential = await createUserWithEmailAndPassword(auth, email, password)
@@ -88,6 +88,11 @@ export function AuthProvider({ children }) {
 
     if (profile.pendingDeveloper) {
       userData.developerRequestedAt = serverTimestamp()
+      userData.bio = extra.bio?.trim() || ''
+      userData.skills = extra.skills || []
+      userData.ratingAvg = 0
+      userData.ratingCount = 0
+      userData.ratingSum = 0
     }
 
     await createUserDocument(credential.user.uid, userData)

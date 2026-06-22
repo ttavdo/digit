@@ -1,0 +1,17 @@
+import { doc, updateDoc } from 'firebase/firestore'
+import { db } from '../firebase'
+
+function requireDb() {
+  if (!db) {
+    throw new Error('Firebase არ არის კონფიგურირებული.')
+  }
+  return db
+}
+
+export async function updateDeveloperProfile(userId, { bio, skills }) {
+  const firestore = requireDb()
+  await updateDoc(doc(firestore, 'users', userId), {
+    bio: bio || '',
+    skills: skills || [],
+  })
+}

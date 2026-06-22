@@ -1,186 +1,88 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { Send, Phone, Mail, Clock, User, Code2 } from 'lucide-react'
+import { useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Send, Phone, Mail, Clock, Zap, Calendar, Timer } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import FirebaseSetupNotice from '../components/FirebaseSetupNotice'
 import Reveal from '../components/Reveal'
 import usePageMeta from '../hooks/usePageMeta'
 import { CONTACT_EMAIL, pageTitle } from '../constants/brand'
-import { getServiceById } from '../data/services'
+import { allServices, getServiceById } from '../data/services'
 import {
-  findOrCreateOpenConversation,
-  formatMessageTime,
-  sendCustomerMessage,
-  subscribeToMessages,
-} from '../services/chatService'
-import { MAX_MESSAGE_LENGTH, validateMessageLength } from '../utils/validation'
+  createTicket,
+  ORDER_PRIORITY,
+  ORDER_PRIORITY_LABELS,
+} from '../services/orderService'
+import { MAX_ORDER_DESCRIPTION_LENGTH, validateMessageLength } from '../utils/validation'
 import './Contact.css'
 
-const EMPTY_ARRAY = []
-
-const TABS = {
-  manager: {
-    id: 'manager',
-    label: 'მენეჯერთან საუბარი',
-    icon: User,
-    name: 'გიორგი — მენეჯერი',
-    status: 'ონლაინ',
-    emptyHint: 'დაწერეთ შეტყობინება — მენეჯერი მალე გიპასუხებთ.',
-  },
-  developer: {
-    id: 'developer',
-    label: 'უშუალოდ ჩემთან (დეველოპერთან) საუბარი',
-    icon: Code2,
-    name: 'ნიკა — დეველოპერი',
-    status: 'ონლაინ',
-    emptyHint: 'დაწერეთ შეტყობინება — დეველოპერი მალე გიპასუხებთ.',
-  },
-}
+const PRIORITY_OPTIONS = [
+  { value: ORDER_PRIORITY.URGENT, label: ORDER_PRIORITY_LABELS.urgent, icon: Zap },
+  { value: ORDER_PRIORITY.TOMORROW, label: ORDER_PRIORITY_LABELS.tomorrow, icon: Calendar },
+  { value: ORDER_PRIORITY.FLEXIBLE, label: ORDER_PRIORITY_LABELS.flexible, icon: Timer },
+]
 
 function Contact() {
   usePageMeta(
-    pageTitle('დაკავშირება'),
-    'DIGIT — დაკავშირდით მენეჯერთან ან ადმინისტრაციასთან. ჩატი, ელ. ფოსტა და ტელეფონი.'
+    pageTitle('ახალი მოთხოვნა'),
+    'DIGIT — გამოიძახე IT დახმარება — ისევე მარტივად, როგორც ტაქსი.',
   )
 
   const { user, userProfile, isFirebaseConfigured } = useAuth()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const serviceId = searchParams.get('service')
-  const selectedService = serviceId ? getServiceById(serviceId) : null
+  const serviceIdFromUrl = searchParams.get('service')
 
-  const [activeTab, setActiveTab] = useState('manager')
-  const [conversationId, setConversationId] = useState(null)
-  const [messages, setMessages] = useState([])
-  const [input, setInput] = useState('')
-  const [sending, setSending] = useState(false)
-  const [loadedChatKey, setLoadedChatKey] = useState('')
-  const [chatError, setChatError] = useState('')
-
-  const messagesEndRef = useRef(null)
-
-  const tab = TABS[activeTab]
-  const customerName = useMemo(
-    () =>
-      userProfile?.name || user?.displayName || user?.email?.split('@')[0] || 'მომხმარებელი',
-    [userProfile?.name, user?.displayName, user?.email],
+  const [serviceId, setServiceId] = useState(
+    () => serviceIdFromUrl || allServices[0]?.id || '',
   )
+  const [description, setDescription] = useState('')
+  const [priority, setPriority] = useState(ORDER_PRIORITY.TOMORROW)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
 
-  const currentChatKey = user ? `${user.uid}_${activeTab}_${serviceId || ''}` : ''
-  const displayConversationId = loadedChatKey === currentChatKey ? conversationId : null
-  const displayMessages = loadedChatKey === currentChatKey ? messages : EMPTY_ARRAY
-  const loadingMessages = !!user && isFirebaseConfigured && loadedChatKey !== currentChatKey
+  const selectedService = getServiceById(serviceId)
 
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [])
-
-  useEffect(() => {
-    if (!user || !isFirebaseConfigured) {
-      return undefined
-    }
-
-    let unsubscribeMessages = () => {}
-    let cancelled = false
-
-    async function initChat() {
-      try {
-        const convId = await findOrCreateOpenConversation({
-          customerId: user.uid,
-          customerName,
-          type: activeTab,
-          serviceRequested: serviceId,
-        })
-
-        if (cancelled) return
-
-        setConversationId(convId)
-
-        unsubscribeMessages = subscribeToMessages(
-          convId,
-          (firestoreMessages) => {
-            if (cancelled) return
-            setMessages(firestoreMessages)
-            setLoadedChatKey(currentChatKey)
-          },
-          (error) => {
-            console.error('Chat subscription error:', error)
-            if (!cancelled) {
-              setChatError('ჩატის ჩატვირთვა ვერ მოხერხდა. სცადეთ გვერდის განახლება.')
-              setLoadedChatKey(currentChatKey)
-            }
-          },
-        )
-      } catch (error) {
-        console.error('Chat init error:', error)
-        if (!cancelled) {
-          setChatError('ჩატის დაწყება ვერ მოხერხდა.')
-          setLoadedChatKey(currentChatKey)
-        }
-      }
-    }
-
-    initChat()
-
-    return () => {
-      cancelled = true
-      unsubscribeMessages()
-    }
-  }, [user, customerName, activeTab, serviceId, isFirebaseConfigured, currentChatKey])
-
-  useEffect(() => {
-    scrollToBottom()
-  }, [displayMessages, scrollToBottom])
-
-  const handleSend = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    const text = input.trim()
-    const lengthError = validateMessageLength(text)
-    if (!text || sending || !displayConversationId || !user || lengthError) {
-      if (lengthError) setChatError(lengthError)
+    const trimmed = description.trim()
+    const lengthError = validateMessageLength(trimmed, MAX_ORDER_DESCRIPTION_LENGTH)
+
+    if (!user || !trimmed || lengthError) {
+      if (lengthError) setError(lengthError)
       return
     }
 
-    setChatError('')
-    setInput('')
-    setSending(true)
+    setSubmitting(true)
+    setError('')
 
     try {
-      await sendCustomerMessage(displayConversationId, {
-        senderId: user.uid,
-        text,
+      await createTicket({
+        customerId: user.uid,
+        customerName:
+          userProfile?.name || user.displayName || user.email?.split('@')[0] || 'ბიზნესი',
+        serviceId,
+        serviceType: selectedService?.title || serviceId,
+        description: trimmed,
+        priority,
       })
-    } catch (error) {
-      console.error('Send message error:', error)
-      setChatError('მესიჯის გაგზავნა ვერ მოხერხდა.')
-      setInput(text)
+      setSuccess(true)
+      setTimeout(() => navigate('/my-requests'), 1500)
+    } catch (err) {
+      setError(err.message || 'მოთხოვნის გაგზავნა ვერ მოხერხდა.')
     } finally {
-      setSending(false)
+      setSubmitting(false)
     }
   }
-
-  const handleTabChange = (tabId) => {
-    if (tabId === activeTab || sending) return
-    setActiveTab(tabId)
-    setConversationId(null)
-    setMessages([])
-    setLoadedChatKey('')
-    setInput('')
-    setChatError('')
-  }
-
-  const emptyHint = selectedService
-    ? `${tab.emptyHint} (სერვისი: ${selectedService.title})`
-    : tab.emptyHint
 
   return (
     <>
       <section className="page-hero page-hero--compact">
         <div className="container">
-          <Reveal variant="fade">
-            <span className="relay-line" />
-            <h1 className="page__title">დაკავშირება</h1>
-            <p className="page__subtitle">
-              აირჩიეთ ვისთან გსურთ საუბარი — DIGIT მენეჯერი პროცესს ხელში აიღებს.
+          <Reveal>
+            <h1 className="page-hero__title">გამოიძახე დახმარება</h1>
+            <p className="page-hero__text">
+              ისევე მარტივად, როგორც ტაქსი — აირჩიე კატეგორია, აღწერე პრობლემა და მიუთითე პრიორიტეტი.
             </p>
           </Reveal>
         </div>
@@ -188,125 +90,117 @@ function Contact() {
 
       <div className="page contact-page">
         <div className="container">
-        {chatError && <div className="contact-page__error">{chatError}</div>}
-        {!isFirebaseConfigured && (
-          <div className="container" style={{ marginBottom: '1rem' }}>
-            <FirebaseSetupNotice />
-          </div>
-        )}
+          {!isFirebaseConfigured && <FirebaseSetupNotice />}
 
-        <div className="contact-layout">
-          <aside className="contact-sidebar">
-            <div className="contact-tabs" role="tablist" aria-label="ჩატის არჩევანი">
-              {Object.values(TABS).map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === id}
-                  className={`contact-tab ${activeTab === id ? 'contact-tab--active' : ''}`}
-                  onClick={() => handleTabChange(id)}
-                  disabled={sending || loadingMessages}
-                >
-                  <Icon size={20} strokeWidth={1.75} aria-hidden="true" />
-                  <span>{label}</span>
-                </button>
-              ))}
+          {success ? (
+            <div className="ticket-success">
+              <h2>მოთხოვნა გაგზავნილია!</h2>
+              <p>მენეჯერი მალე დაგიკავშირდება ფასის შეთავაზებით.</p>
+              <Link to="/my-requests" className="btn btn--primary">
+                ჩემი მოთხოვნები
+              </Link>
             </div>
+          ) : (
+            <div className="ticket-layout">
+              <form className="ticket-form" onSubmit={handleSubmit} noValidate>
+                {error && <div className="contact-page__error">{error}</div>}
 
-            <div className="contact-info">
-              <h2 className="contact-info__title">სხვა გზით დაკავშირება</h2>
-              <p className="contact-info__desc">
-                თუ ჩატი არ გირჩევნიათ, დაგვიკავშირდით პირდაპირ:
-              </p>
-              <ul className="contact-info__list">
-                <li>
-                  <Phone size={18} aria-hidden="true" />
-                  <div>
-                    <span className="contact-info__label">ტელეფონი</span>
-                    <a href="tel:+995555123456">+995 555 123 456</a>
-                  </div>
-                </li>
-                <li>
-                  <Mail size={18} aria-hidden="true" />
-                  <div>
-                    <span className="contact-info__label">ელ. ფოსტა</span>
-                    <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-                  </div>
-                </li>
-                <li>
-                  <Clock size={18} aria-hidden="true" />
-                  <div>
-                    <span className="contact-info__label">სამუშაო საათები</span>
-                    <span>ორშ–პარ, 10:00 – 19:00</span>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </aside>
-
-          <div className="chat-window" role="tabpanel">
-            <div className="chat-window__header">
-              <div className="chat-window__avatar" aria-hidden="true">
-                {activeTab === 'manager' ? 'GM' : 'NK'}
-              </div>
-              <div>
-                <h2 className="chat-window__name">{tab.name}</h2>
-                <span className="chat-window__status">
-                  <span className="chat-window__status-dot" />
-                  {tab.status}
-                </span>
-              </div>
-            </div>
-
-            <div className="chat-messages" aria-live="polite">
-              {loadingMessages ? (
-                <div className="chat-messages__loading">ჩატი იტვირთება...</div>
-              ) : displayMessages.length === 0 ? (
-                <div className="chat-messages__empty">
-                  <p>{emptyHint}</p>
-                </div>
-              ) : (
-                displayMessages.map(({ id, text, senderRole, createdAt }) => (
-                  <div
-                    key={id}
-                    className={`chat-bubble chat-bubble--${senderRole === 'customer' ? 'user' : 'bot'}`}
+                <div className="ticket-form__field">
+                  <label htmlFor="ticket-service" className="ticket-form__label">
+                    კატეგორია
+                  </label>
+                  <select
+                    id="ticket-service"
+                    className="ticket-form__select"
+                    value={serviceId}
+                    onChange={(e) => setServiceId(e.target.value)}
+                    disabled={submitting}
+                    required
                   >
-                    <p>{text}</p>
-                    {createdAt && (
-                      <time className="chat-bubble__time" dateTime={createdAt.toDate?.()?.toISOString()}>
-                        {formatMessageTime(createdAt)}
-                      </time>
-                    )}
+                    {allServices.map(({ id, title }) => (
+                      <option key={id} value={id}>
+                        {title}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedService && (
+                    <p className="ticket-form__hint">{selectedService.description}</p>
+                  )}
+                </div>
+
+                <div className="ticket-form__field">
+                  <span className="ticket-form__label">პრიორიტეტი</span>
+                  <div className="ticket-priority">
+                    {PRIORITY_OPTIONS.map(({ value, label, icon: Icon }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className={`ticket-priority__btn ${priority === value ? 'ticket-priority__btn--active' : ''} ticket-priority__btn--${value}`}
+                        onClick={() => setPriority(value)}
+                        disabled={submitting}
+                      >
+                        <Icon size={18} />
+                        {label}
+                      </button>
+                    ))}
                   </div>
-                ))
-              )}
+                </div>
 
-              <div ref={messagesEndRef} />
+                <div className="ticket-form__field">
+                  <label htmlFor="ticket-description" className="ticket-form__label">
+                    პრობლემის აღწერა
+                  </label>
+                  <textarea
+                    id="ticket-description"
+                    className="ticket-form__textarea"
+                    rows={6}
+                    placeholder="აღწერე რა პრობლემა გაქვს, რა გჭირდება..."
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    disabled={submitting || !isFirebaseConfigured}
+                    required
+                    maxLength={MAX_ORDER_DESCRIPTION_LENGTH}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn btn--primary btn--lg ticket-form__submit"
+                  disabled={submitting || !description.trim() || !isFirebaseConfigured}
+                >
+                  <Send size={18} />
+                  {submitting ? 'იგზავნება...' : 'მოთხოვნის გაგზავნა'}
+                </button>
+              </form>
+
+              <aside className="contact-info">
+                <h2 className="contact-info__title">სხვა გზით დაკავშირება</h2>
+                <ul className="contact-info__list">
+                  <li>
+                    <Phone size={18} aria-hidden="true" />
+                    <div>
+                      <span className="contact-info__label">ტელეფონი</span>
+                      <a href="tel:+995555123456">+995 555 123 456</a>
+                    </div>
+                  </li>
+                  <li>
+                    <Mail size={18} aria-hidden="true" />
+                    <div>
+                      <span className="contact-info__label">ელ. ფოსტა</span>
+                      <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+                    </div>
+                  </li>
+                  <li>
+                    <Clock size={18} aria-hidden="true" />
+                    <div>
+                      <span className="contact-info__label">სამუშაო საათები</span>
+                      <span>ორშ–პარ, 10:00 – 19:00</span>
+                    </div>
+                  </li>
+                </ul>
+              </aside>
             </div>
-
-            <form className="chat-input" onSubmit={handleSend}>
-              <input
-                type="text"
-                className="chat-input__field"
-                placeholder="დაწერე შეტყობინება..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                disabled={sending || loadingMessages || !displayConversationId || !isFirebaseConfigured}
-                maxLength={MAX_MESSAGE_LENGTH}
-                aria-label="შეტყობინება"
-              />
-              <button
-                type="submit"
-                className="chat-input__send btn btn--primary"
-                disabled={!input.trim() || sending || loadingMessages || !displayConversationId || !isFirebaseConfigured}
-                aria-label="გაგზავნა"
-              >
-                <Send size={20} />
-              </button>
-            </form>
-          </div>
-        </div>
+          )}
         </div>
       </div>
     </>

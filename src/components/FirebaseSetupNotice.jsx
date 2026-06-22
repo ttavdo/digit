@@ -5,7 +5,7 @@ function FirebaseSetupNotice() {
     <div className="firebase-setup">
       <h2 className="firebase-setup__title">Firebase არ არის კონფიგურირებული</h2>
       <p className="firebase-setup__text">
-        საიტი მუშაობს, მაგრამ ავტორიზაცია და ჩატი საჭიროებს Firebase-ის ჩართვას.
+        საიტი მუშაობს, მაგრამ ავტორიზაცია და თიქეტები საჭიროებს Firebase-ის ჩართვას.
       </p>
       <ol className="firebase-setup__steps">
         <li>

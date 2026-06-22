@@ -30,8 +30,8 @@ export const ROLE_DEFAULT_ROUTES = {
 
 const ROUTE_ALLOWED_ROLES = {
   '/contact': ['customer'],
+  '/my-requests': ['customer'],
   '/dashboard': ['manager'],
-  '/dashboard/orders': ['manager'],
   '/developer-dashboard': ['developer'],
 }
 

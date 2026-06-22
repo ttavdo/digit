@@ -17,7 +17,7 @@ import { pageTitle } from '../constants/brand'
 import './Auth.css'
 
 function Register() {
-  usePageMeta(pageTitle('რეგისტრაცია'), 'DIGIT — შექმენით ანგარიში და დაიწყეთ საუბარი მენეჯერთან.')
+  usePageMeta(pageTitle('რეგისტრაცია'), 'DIGIT — შექმენით ანგარიში და გამოიძახეთ IT დახმარება.')
   const { signup, loginWithGoogle, refreshUserProfile, isFirebaseConfigured } = useAuth()
   const navigate = useNavigate()
 
@@ -26,6 +26,8 @@ function Register() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [accountType, setAccountType] = useState('customer')
+  const [bio, setBio] = useState('')
+  const [skills, setSkills] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
   const [formError, setFormError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
@@ -54,7 +56,13 @@ function Register() {
 
     setSubmitting(true)
     try {
-      const result = await signup(email.trim(), password, name.trim(), accountType)
+      const result = await signup(email.trim(), password, name.trim(), accountType, {
+        bio,
+        skills: skills
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean),
+      })
 
       if (result.pendingDeveloper) {
         setSuccessMessage(
@@ -185,8 +193,8 @@ function Register() {
                   disabled={submitting || !isFirebaseConfigured || !!successMessage}
                 />
                 <span className="auth-role-select__content">
-                  <strong>მომხმარებელი</strong>
-                  <small>სერვისებით სარგებლობა და ჩატი მენეჯერთან</small>
+                  <strong>ბიზნესი</strong>
+                  <small>IT დახმარების მოთხოვნების გაგზავნა</small>
                 </span>
               </label>
               <label className="auth-role-select__option">
@@ -199,11 +207,44 @@ function Register() {
                   disabled={submitting || !isFirebaseConfigured || !!successMessage}
                 />
                 <span className="auth-role-select__content">
-                  <strong>დეველოპერი</strong>
-                  <small>admin-ის დადასტურების შემდეგ გაიხსნება Dashboard</small>
+                  <strong>შემსრულებელი</strong>
+                  <small>admin-ის დადასტურების შემდეგ — შეკვეთების მიღება</small>
                 </span>
               </label>
             </fieldset>
+
+            {accountType === 'developer' && (
+              <>
+                <div className="auth-form__field">
+                  <label htmlFor="register-bio" className="auth-form__label">
+                    პროფილი (არასავალდებულო)
+                  </label>
+                  <textarea
+                    id="register-bio"
+                    className="auth-form__input auth-form__textarea"
+                    rows={3}
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    placeholder="გამოცდილება, სპეციალიზაცია..."
+                    disabled={submitting || !isFirebaseConfigured || !!successMessage}
+                  />
+                </div>
+                <div className="auth-form__field">
+                  <label htmlFor="register-skills" className="auth-form__label">
+                    უნარები (მძიმით გამოყოფილი)
+                  </label>
+                  <input
+                    id="register-skills"
+                    type="text"
+                    className="auth-form__input"
+                    value={skills}
+                    onChange={(e) => setSkills(e.target.value)}
+                    placeholder="React, Windows, ქსელი..."
+                    disabled={submitting || !isFirebaseConfigured || !!successMessage}
+                  />
+                </div>
+              </>
+            )}
 
             <button
               type="submit"

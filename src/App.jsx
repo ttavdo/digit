@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import Layout from './components/Layout'
 import RoleProtectedRoute from './components/RoleProtectedRoute'
@@ -6,6 +6,7 @@ import Home from './pages/Home'
 import Services from './pages/Services'
 import About from './pages/About'
 import Contact from './pages/Contact'
+import MyRequests from './pages/MyRequests'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
@@ -28,6 +29,14 @@ function App() {
               </RoleProtectedRoute>
             }
           />
+          <Route
+            path="my-requests"
+            element={
+              <RoleProtectedRoute allowedRoles={['customer']}>
+                <MyRequests />
+              </RoleProtectedRoute>
+            }
+          />
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />
         </Route>
@@ -45,11 +54,7 @@ function App() {
 
         <Route
           path="/dashboard/orders"
-          element={
-            <RoleProtectedRoute allowedRoles={['manager']}>
-              <Dashboard initialTab="orders" />
-            </RoleProtectedRoute>
-          }
+          element={<Navigate to="/dashboard" replace />}
         />
 
         <Route
