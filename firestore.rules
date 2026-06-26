@@ -67,8 +67,8 @@ service cloud.firestore {
         );
     }
 
-    function validDeveloperProfileUpdate() {
-      return request.auth.uid == userId
+    function validDeveloperProfileUpdate(targetUserId) {
+      return request.auth.uid == targetUserId
         && userDoc().data.role == 'developer'
         && request.resource.data.role == 'developer'
         && request.resource.data.developerRequestStatus == resource.data.developerRequestStatus
@@ -83,9 +83,9 @@ service cloud.firestore {
         && request.resource.data.developerRequestStatus == 'none';
     }
 
-    function validAdminUserRoleUpdate() {
+    function validAdminUserRoleUpdate(targetUserId) {
       return isAdmin()
-        && request.auth.uid != userId
+        && request.auth.uid != targetUserId
         && request.resource.data.email == resource.data.email
         && request.resource.data.role in ['customer', 'manager', 'developer', 'admin']
         && request.resource.data.developerRequestStatus in ['none', 'pending', 'approved', 'rejected'];
@@ -168,9 +168,9 @@ service cloud.firestore {
 
       allow update: if request.auth != null && (
         (request.auth.uid == userId && validUserSelfUpdate())
-        || (request.auth.uid == userId && validDeveloperProfileUpdate())
+        || (request.auth.uid == userId && validDeveloperProfileUpdate(userId))
         || validBootstrapAdminSelfUpgrade(userId)
-        || validAdminUserRoleUpdate()
+        || validAdminUserRoleUpdate(userId)
       );
     }
 
