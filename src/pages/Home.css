@@ -9,7 +9,7 @@
   color: var(--text-inverse);
   padding: clamp(5rem, 12vw, 8rem) 0 clamp(5rem, 10vw, 7rem);
   overflow: hidden;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-on-dark);
 }
 
 .hero__ambient {
@@ -19,7 +19,7 @@
   transform: translateX(-50%);
   width: min(900px, 120vw);
   height: 600px;
-  background: radial-gradient(ellipse at center, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
+  background: radial-gradient(ellipse at center, rgba(72, 118, 225, 0.15) 0%, transparent 70%);
   pointer-events: none;
   animation: heroAmbient 20s ease-in-out infinite alternate;
 }
@@ -74,7 +74,7 @@
 }
 
 .hero__title-accent {
-  background: linear-gradient(135deg, #e9d5ff 0%, #a78bfa 50%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #D5E9E7 0%, #98D1E2 50%, #4876E1 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -83,7 +83,7 @@
 .hero__text {
   font-size: clamp(1rem, 1.8vw, 1.0625rem);
   line-height: 1.75;
-  color: #71717a;
+  color: var(--text-on-dark-muted);
   max-width: 30rem;
   margin-bottom: 2.5rem;
 }
@@ -95,7 +95,7 @@
 }
 
 .hero__btn-outline {
-  color: #d4d4d8;
+  color: var(--text-inverse);
   border-color: var(--color-border-strong);
   background: transparent;
 }
@@ -214,7 +214,7 @@
   height: 44px;
   margin-bottom: 1.25rem;
   color: var(--color-copper-glow);
-  background: rgba(139, 92, 246, 0.08);
+  background: rgba(72, 118, 225, 0.1);
   border-radius: var(--radius-md);
 }
 
@@ -257,7 +257,7 @@
 
 @media (hover: hover) {
   .service-card:hover {
-    background: #1a1a1e;
+    background: rgba(152, 209, 226, 0.35);
   }
 }
 
@@ -268,7 +268,7 @@
   width: 40px;
   height: 40px;
   color: var(--color-copper-glow);
-  background: rgba(139, 92, 246, 0.08);
+  background: rgba(72, 118, 225, 0.1);
   border-radius: var(--radius-sm);
   margin-bottom: 1.25rem;
 }
@@ -330,7 +330,7 @@
   width: 36px;
   height: 36px;
   color: var(--color-copper-glow);
-  background: rgba(139, 92, 246, 0.08);
+  background: rgba(72, 118, 225, 0.1);
   border-radius: var(--radius-sm);
 }
 
@@ -369,7 +369,7 @@
 .trust__quote p {
   font-size: 1.0625rem;
   line-height: 1.65;
-  color: #d4d4d8;
+  color: var(--text-color);
   margin-bottom: 1.25rem;
 }
 
@@ -415,13 +415,13 @@
   background: var(--color-ink);
   padding: clamp(5rem, 10vw, 7rem) 0;
   overflow: hidden;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-on-dark);
 }
 
 .cta__ambient {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 60% 50% at 50% 100%, rgba(139, 92, 246, 0.08), transparent);
+  background: radial-gradient(ellipse 60% 50% at 50% 100%, rgba(72, 118, 225, 0.12), transparent);
   pointer-events: none;
 }
 
@@ -434,14 +434,14 @@
 .cta__title {
   font-family: var(--font-display);
   font-size: clamp(1.875rem, 4vw, 2.5rem);
-  color: var(--primary-color);
+  color: var(--text-inverse);
   margin-bottom: 1rem;
   letter-spacing: -0.03em;
 }
 
 .cta__text {
   font-size: 1rem;
-  color: var(--text-muted);
+  color: var(--text-on-dark-muted);
   margin-bottom: 2rem;
   max-width: 440px;
   margin-left: auto;

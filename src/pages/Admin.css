@@ -36,7 +36,7 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-copper-glow);
-  background: rgba(139, 92, 246, 0.1);
+  background: rgba(72, 118, 225, 0.1);
   border-radius: 999px;
 }
 
@@ -179,8 +179,8 @@
 
 .admin-tabs__btn--active {
   color: var(--color-copper-glow);
-  border-color: rgba(139, 92, 246, 0.4);
-  background: rgba(139, 92, 246, 0.08);
+  border-color: rgba(72, 118, 225, 0.4);
+  background: rgba(72, 118, 225, 0.08);
 }
 
 .admin-section__head {
@@ -265,8 +265,8 @@
 }
 
 .admin-role-badge--manager {
-  color: #a78bfa;
-  background: rgba(139, 92, 246, 0.12);
+  color: #98D1E2;
+  background: rgba(72, 118, 225, 0.12);
 }
 
 .admin-role-badge--developer {
@@ -276,7 +276,7 @@
 
 .admin-role-badge--customer {
   color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(45, 62, 139, 0.06);
 }
 
 .admin-site-form__block {

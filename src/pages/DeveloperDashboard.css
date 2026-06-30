@@ -5,8 +5,8 @@
   min-height: 100dvh;
   max-width: 480px;
   margin: 0 auto;
-  background: var(--color-ink, #0a0a0b);
-  color: var(--primary-color);
+  background: var(--color-ink);
+  color: var(--text-inverse);
 }
 
 .dev-app__header {
@@ -16,7 +16,7 @@
   gap: 1rem;
   padding: 1rem 1.125rem;
   border-bottom: 1px solid var(--color-border);
-  background: #111113;
+  background: var(--color-slate);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -61,7 +61,7 @@
 }
 
 .dev-app__logout:hover {
-  color: var(--primary-color);
+  color: var(--text-inverse);
   border-color: var(--color-border-hover);
 }
 
@@ -100,7 +100,7 @@
   gap: 0.75rem;
   padding: 0.875rem 1.125rem;
   border-bottom: 1px solid var(--color-border);
-  background: #111113;
+  background: var(--color-slate);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -148,7 +148,7 @@
 .dev-app__empty p {
   margin: 0;
   font-size: 0.9375rem;
-  color: var(--primary-color);
+  color: var(--text-inverse);
 }
 
 .dev-app__empty span {
@@ -169,7 +169,7 @@
   gap: 0.25rem;
   padding: 0.5rem 0.75rem calc(0.5rem + env(safe-area-inset-bottom));
   border-top: 1px solid var(--color-border);
-  background: #111113;
+  background: var(--color-slate);
   position: fixed;
   bottom: 0;
   left: 50%;
@@ -198,7 +198,7 @@
 
 .dev-app__tab--active {
   color: var(--color-copper-glow);
-  background: rgba(139, 92, 246, 0.1);
+  background: rgba(72, 118, 225, 0.1);
 }
 
 .dev-app__badge {
@@ -226,7 +226,7 @@
   width: 100%;
   max-width: 480px;
   padding: 1rem 1.125rem calc(1rem + env(safe-area-inset-bottom));
-  background: linear-gradient(180deg, transparent, #0a0a0b 30%);
+  background: linear-gradient(180deg, transparent, var(--color-ink) 30%);
 }
 
 .dev-app__action-btn {
@@ -257,14 +257,14 @@
   padding: 1rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  background: #141416;
+  background: var(--bg-color);
   cursor: pointer;
   transition: border-color var(--transition), background-color var(--transition);
 }
 
 .dev-task-card:hover {
   border-color: var(--color-border-hover);
-  background: #18181b;
+  background: var(--color-slate);
 }
 
 .dev-task-card__top {
@@ -292,8 +292,8 @@
 }
 
 .dev-task-card__status--assigned {
-  color: #a78bfa;
-  background: rgba(139, 92, 246, 0.15);
+  color: #98D1E2;
+  background: rgba(72, 118, 225, 0.15);
 }
 
 .dev-task-card__status--in_progress {
@@ -360,7 +360,7 @@
   padding: 1rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: #141416;
+  background: var(--bg-color);
 }
 
 .dev-task-detail__block h3 {
@@ -416,7 +416,7 @@
   margin-bottom: 1rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  background: #141416;
+  background: var(--bg-color);
 }
 
 .dev-profile-card__avatar {
@@ -427,7 +427,7 @@
   height: 4rem;
   margin-bottom: 0.75rem;
   border-radius: 50%;
-  background: rgba(139, 92, 246, 0.12);
+  background: rgba(72, 118, 225, 0.12);
   color: var(--color-copper-glow);
 }
 
@@ -453,7 +453,7 @@
   padding: 1rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: #141416;
+  background: var(--bg-color);
 }
 
 .dev-profile-view__head {
@@ -477,7 +477,7 @@
   margin: 0;
   font-size: 0.875rem;
   line-height: 1.55;
-  color: var(--primary-color);
+  color: var(--text-color);
 }
 
 .dev-profile-view__edit {

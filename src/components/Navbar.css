@@ -2,7 +2,7 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(9, 9, 11, 0.75);
+  background: rgba(213, 233, 231, 0.9);
   backdrop-filter: blur(12px) saturate(1.2);
   border-bottom: 1px solid var(--color-border);
   height: var(--header-height);
@@ -138,7 +138,7 @@
 }
 
 .navbar__auth-btn--register:hover {
-  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.35);
+  box-shadow: 0 4px 20px rgba(72, 118, 225, 0.35);
 }
 
 .navbar__auth-btn--logout {

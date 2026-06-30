@@ -32,7 +32,7 @@
   object-fit: cover;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color, var(--color-border));
-  background: var(--bg-alt, #141416);
+  background: var(--bg-alt, var(--bg-color));
   overflow: hidden;
 }
 

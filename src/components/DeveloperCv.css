@@ -40,7 +40,7 @@
   padding: 0.75rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: #0c0c0e;
+  background: #ffffff;
   cursor: pointer;
   transition:
     border-color var(--transition),
@@ -52,8 +52,8 @@
 }
 
 .dev-cv-fields__category--checked {
-  border-color: rgba(139, 92, 246, 0.45);
-  background: rgba(139, 92, 246, 0.08);
+  border-color: rgba(72, 118, 225, 0.45);
+  background: rgba(72, 118, 225, 0.08);
 }
 
 .dev-cv-fields__category input {
@@ -108,7 +108,7 @@
   font-size: 0.6875rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #71717a;
+  color: var(--text-on-dark-muted);
 }
 
 .dev-cv-summary__meta dd {

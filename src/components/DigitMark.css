@@ -25,17 +25,17 @@
 }
 
 .digit-mark__bg {
-  fill: #141416;
+  fill: #2D3E8B;
 }
 
 .digit-mark__ring {
   fill: none;
-  stroke: rgba(139, 92, 246, 0.35);
+  stroke: rgba(72, 118, 225, 0.45);
   stroke-width: 1.5;
 }
 
 .digit-mark__lines {
-  stroke: rgba(167, 139, 250, 0.55);
+  stroke: rgba(152, 209, 226, 0.75);
   stroke-width: 1.75;
   stroke-linecap: round;
   stroke-linejoin: round;
