@@ -1,11 +1,11 @@
 .orders-panel {
-  --dash-surface: #eef6f5;
+  --dash-surface: #f7f8fc;
   --dash-surface-raised: #ffffff;
-  --dash-border: rgba(45, 62, 139, 0.12);
-  --dash-border-strong: rgba(45, 62, 139, 0.2);
-  --dash-label: #2D3E8B;
-  --dash-text: #243470;
-  --dash-muted: #5A6A9E;
+  --dash-border: rgba(15, 23, 42, 0.08);
+  --dash-border-strong: rgba(15, 23, 42, 0.12);
+  --dash-label: #0f172a;
+  --dash-text: #334155;
+  --dash-muted: #64748b;
 
   flex: 1;
   display: grid;
@@ -45,8 +45,8 @@
 
 .orders-panel__filters .dashboard-filter--active {
   color: var(--dash-label);
-  background-color: rgba(72, 118, 225, 0.15);
-  border-color: rgba(72, 118, 225, 0.45);
+  background-color: rgba(79, 109, 245, 0.08);
+  border-color: rgba(79, 109, 245, 0.25);
 }
 
 .orders-panel__items {
@@ -74,8 +74,8 @@
 }
 
 .orders-item--active {
-  background-color: rgba(72, 118, 225, 0.1);
-  border-color: rgba(72, 118, 225, 0.35);
+  background-color: rgba(79, 109, 245, 0.06);
+  border-color: rgba(79, 109, 245, 0.2);
 }
 
 .orders-item__top {
@@ -202,7 +202,7 @@
 .orders-detail__textarea:focus {
   outline: none;
   border-color: var(--secondary-color);
-  box-shadow: 0 0 0 3px rgba(72, 118, 225, 0.2);
+  box-shadow: 0 0 0 3px rgba(79, 109, 245, 0.2);
 }
 
 .orders-detail__select:disabled,
@@ -259,13 +259,13 @@
 }
 
 .order-badge--new {
-  color: #2D3E8B;
-  background-color: rgba(72, 118, 225, 0.18);
+  color: #3d56c6;
+  background-color: rgba(79, 109, 245, 0.1);
 }
 
 .order-badge--assigned {
-  color: #3A62C4;
-  background-color: rgba(72, 118, 225, 0.15);
+  color: #4338ca;
+  background-color: rgba(79, 109, 245, 0.1);
 }
 
 .order-badge--in_progress {
@@ -415,7 +415,7 @@
 }
 
 .orders-detail__section--compensation {
-  border-color: rgba(72, 118, 225, 0.28);
+  border-color: rgba(79, 109, 245, 0.28);
 }
 
 .orders-panel .btn--outline {
@@ -425,8 +425,8 @@
 }
 
 .orders-panel .btn--outline:hover {
-  background-color: rgba(72, 118, 225, 0.08);
-  border-color: rgba(72, 118, 225, 0.35);
+  background-color: rgba(79, 109, 245, 0.08);
+  border-color: rgba(79, 109, 245, 0.35);
 }
 
 @media (max-width: 900px) {
