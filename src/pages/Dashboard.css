@@ -76,9 +76,9 @@
 }
 
 .dashboard-main-tab--active {
-  background: var(--color-highlight);
-  color: var(--primary-color);
-  border: 1px solid var(--color-border-strong);
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-inverse);
+  border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .dashboard-main-tab__badge {
